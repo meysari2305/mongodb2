@@ -1,39 +1,34 @@
-require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
-const session = require('express-session');
-
+const dotenv = require('dotenv');
+const morgan = require('morgan');
+const bodyparser = require('body-parser');
+const path = require('path');
+require('./server/database/connection');
 const app = express();
-const PORT = process.env.PORT || 4000;
 
-// database connection
-mongoose.connect(process.env.DB_URI, { useNewUrlParser: true, UseUnifiedTopology: true });
-const db = mongoose.connection;
-db.on('error', (error) => console.log(error));
-db.once('open', () => console.log('connected to database'));
+dotenv.config({ path: 'config.env' });
+const PORT = process.env.PORT || 8080;
 
-//middlewares
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
+// log request
+app.use(morgan('tiny'));
 
-app.use(
-  session({
-    secret: 'my secret key',
-    saveUninitialized: true,
-    resave: false,
-  })
-);
+// parse request to body-parser
+app.use(bodyparser.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
-  res.locals.message = req.session.message;
-  delete req.session.message;
-  next();
+//set view angine
+app.set('view angine', 'ejs');
+//app.set(('views', path.resolve(__dirname, 'views/ejs')));
+
+//load assets
+
+app.use('/css', express.static(path.resolve(__dirname, 'assets/css')));
+app.use('/img', express.static(path.resolve(__dirname, 'assets/img')));
+app.use('/js', express.static(path.resolve(__dirname, 'assets/js')));
+
+// load routers
+
+app.use('/', require('./server/routes/router'));
+
+app.listen(PORT, () => {
+  console.log(`server is running on http://localhost:${PORT}`);
 });
-
-//set tamplate agine
-app.set('view engine', 'ejs');
-
-// router prefix
-app.use('', require('./routes/routes'));
-
-app.listen(PORT, () => console.log(`server up and running at http://localhost:${PORT}`));
